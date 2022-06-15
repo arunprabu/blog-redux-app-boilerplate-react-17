@@ -1,7 +1,6 @@
 import { FETCH_ERROR, FETCH_REQUEST, FETCH_SUCCESS } from './types';
 
 export const fetchRequest = () => {
-  debugger;
   return { 
     type: FETCH_REQUEST
   }
