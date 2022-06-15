@@ -1,0 +1,85 @@
+What is Saga?
+  redux-saga is a library that aims to make application side effects 
+  (i.e. asynchronous things like data fetching and impure things like 
+  accessing the browser cache) easier to manage, more efficient to execute, 
+  easy to test, and better at handling failures.
+
+  The mental model is that a saga is like a separate thread in your application 
+  that's solely responsible for side effects. 
+  redux-saga is a redux middleware, which means this thread can be started, 
+  paused and cancelled from the main application with normal redux actions, 
+  it has access to the full redux application state and it can dispatch 
+  redux actions as well.
+
+  It uses an ES6 feature called Generators to make those asynchronous 
+  flows easy to read, write and test.
+
+
+When to use Redux Saga?
+  In an application using Redux, when you fire an action 
+  something changes in the state of the app.
+
+  As this happens, you might need to do something that derives 
+  from this state change.
+
+  For example you might want to:
+
+    make a HTTP call to a server
+    send a WebSocket event
+    fetch some data from a GraphQL server
+    save something to the cache or browser local storage
+
+  Those are all things that don’t really relate to the app state, 
+  or are async, and you need to move them into a place 
+  different than your actions or reducers (while you technically could, 
+  it’s not a good way to have a clean codebase).
+
+  Enter Redux Saga, a Redux middleware helping you with side effects.
+
+========
+
+
+Step 1:
+  import createSagaMiddleware from 'redux-saga';
+
+Step 2:
+  Then we create a middleware and we apply it to our newly created Redux Store
+
+  const sagaMiddleware = createSagaMiddleware()
+
+  const store = createStore(
+    reducers,
+    applyMiddleware(sagaMiddleware)
+  );
+
+Step 3:
+  The last step is running the saga. 
+  We import it and pass it to the run method of the middleware
+
+  import rootSaga from './sagas'
+
+  const store = createStore(
+    reducers,
+    applyMiddleware(sagaMiddleware)
+  );
+
+  // after applying middleware you need to run sagaMiddleware with rootSaga 
+  sagaMiddleware.run(rootSaga);
+
+
+Step 4:
+  In ./sagas/index.js 
+
+  import { takeEvery } from 'redux-saga/effects'
+
+  const rootSaga = function* rootSaga(params) {
+    // rest api call using axios 
+
+    yield takeEvery('ADD_MESSAGE', (action) => {
+      socket.send(JSON.stringify(action))
+    })
+  }
+
+  export default rootSaga;
+===
+
