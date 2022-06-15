@@ -19,7 +19,7 @@ src/
 Redux 
 ---
 Step 0: 
-  npm i redux@4.1.2 react-redux@7.2.6 
+  npm i redux@4.1.2 react-redux@7.2.6 redux-saga redux-devtools-extension
 
   The above mentioned versions are compatible with React v 17. 
 
@@ -29,124 +29,102 @@ Step 0:
 Step 1: 
 ----
 in src/configureStore.ts 
-  import { Store, createStore, applyMiddleware } from 'redux'
+  import { createStore, applyMiddleware } from 'redux'
   import createSagaMiddleware from 'redux-saga'
-  // `react-router-redux` is deprecated, so we use `connected-react-router`.
-  // This provides a Redux middleware which connects to our `react-router` instance.
-  import { routerMiddleware } from 'connected-react-router'
+
   // We'll be using Redux Devtools. We can use the `composeWithDevTools()`
   // directive so we can pass our middleware along with it
-  import { composeWithDevTools } from 'redux-devtools-extension'
+  import { composeWithDevTools } from 'redux-devtools-extension' 
   // If you use react-router, don't forget to pass in your history type.
-  import { History } from 'history'
+  import { createRootReducer, rootSaga } from './store'
 
   // Let's configue the store/ 
   // store configuration can have initialState and has to return store.
-  export default function configureStore(initialState: any){
+  export default function configureStore(history, initialState) {
+    // create the composing function for our middlewares
+    const composeEnhancers = composeWithDevTools({})
+    // create the redux-saga middleware
+    const sagaMiddleware = createSagaMiddleware()
+
+    // We'll create our store with the combined reducers/sagas, and the initial Redux state that
+    // we'll be passing from our entry point.
     const store = createStore(
-      initialState
-    );
+      createRootReducer(history),
+      initialState,
+      composeEnhancers(applyMiddleware(sagaMiddleware))
+    )
+
+    // Don't forget to run the root saga, and return the store object.
+    sagaMiddleware.run(rootSaga)
     return store;
   }
 
 
 
 Step 2:
+----
+  in src/store/posts/reducer.ts 
+    
+  const postReducer = (state = [], action) => {
+    switch (action.type) {
+      case 'ADD_POST':
+        return state;
+
+      default: 
+        return state;
+    }
+  }
+
+  export default postReducer;
+    
+
+
+Step 3:
 in src/store/index.ts 
 
   import { combineReducers } from 'redux'
   import { all, fork } from 'redux-saga/effects'
-  import { connectRouter, RouterState } from 'connected-react-router'
   import { History } from 'history'
-
-
-  // The top-level state object
-  export interface ApplicationState {
-    posts: PostsState  // error here 
-    router: RouterState
-  } 
 
   // Whenever an action is dispatched, Redux will update each top-level application state property
   // using the reducer with the matching name. It's important that the names match exactly, and that
   // the reducer acts on the corresponding ApplicationState property type.
-  export const createRootReducer = (history: History) =>
+  export const createRootReducer = (history) =>
     combineReducers({
-      posts: postsReducer,   //error here
-      router: connectRouter(history)
+      posts: postsReducer   //error here
     })
 
 
+Step 4: 
+in store/posts/reducer.js,
+  import { postsReducer } from './posts/reducer'
 
-Step 3:
-----
-  in src/store/posts/reducer.ts 
+  and the error will go off
 
-    import { Reducer } from 'redux';
-
-    // Type-safe initialState!
-    const initialState: PostsState = {
-      postList: [],
-      errors: undefined,
-      loading: false,
-      status: undefined
-    }
-
-    // everything will remain type-safe.
-    const reducer: Reducer<PostsState> = (state = initialState, action) => {
-      switch (action.type) {
-        case 'ADD':
-          return state;
-        default: 
-          return state;
-      }
-    }
-
-
-    // Instead of using default export, we use named exports. 
-    // That way we can group these exports
-    // inside the `index.js` folder.
-    export { reducer as postsReducer }
+======
 
 
 ===
-Step 4: 
+Step 5: 
 ----  
-  in store/posts/types.ts 
+  in store/posts/types.js
     have the following actions 
 
   // Define however naming conventions you'd like for your action types, but
   // personally, I use the `@@context/ACTION_TYPE` convention, to follow the convention
   // of Redux's `@@INIT` action.
-  export enum PostsActionTypes {
-    CREATE_REQUEST = '@@posts/CREATE_REQUEST',  // for update post by id
-    CREATE_SUCCESS = '@@posts/CREATE_SUCCESS',   // // for update post by id - success
-    FETCH_REQUEST = '@@posts/FETCH_REQUEST',  // for get all posts
-    FETCH_SUCCESS = '@@posts/FETCH_SUCCESS',  // for get all posts success
-    FETCH_ERROR = '@@posts/FETCH_ERROR',      // for post related errors 
-    FETCH_REQUEST_BY_ID = '@@posts/FETCH_REQUEST_BY_ID',   // for get post by id 
-    FETCH_SUCCESS_BY_ID = '@@posts/FETCH_SUCCESS_BY_ID',   // for get post by id - success 
-    UPDATE_REQUEST_BY_ID = '@@posts/UPDATE_REQUEST_BY_ID',  // for update post by id
-    UPDATE_SUCCESS_BY_ID = '@@posts/UPDATE_SUCCESS_BY_ID'   // // for update post by id - success
-  }
+  export const CREATE_REQUEST = '@@posts/CREATE_REQUEST';  // for create post
+  export const CREATE_SUCCESS = '@@posts/CREATE_SUCCESS';   // // for create post - success
+  export const CREATE_ERROR = '@@posts/CREATE_ERROR';   // // for create post - error
 
-  // Declare state types with `readonly` modifier to get compile time immutability.
-  // https://github.com/piotrwitek/react-redux-typescript-guide#state-with-type-level-immutability
-  export interface PostsState {
-    readonly loading: boolean
-    readonly postList: []
-    readonly errors?: string,
-    readonly status?: boolean
-  }
-
-====
-
-Step 5: 
-  in store/posts/reducer.ts,
-    import { PostsState, PostsActionTypes } from './types';
-
-    and the error will go off
-
-  ======
+  export const FETCH_REQUEST = '@@posts/FETCH_REQUEST';  // for get all posts
+  export const FETCH_SUCCESS = '@@posts/FETCH_SUCCESS';  // for get all posts success
+  export const FETCH_ERROR = '@@posts/FETCH_ERROR';      // for post related errors
+  
+  export const FETCH_REQUEST_BY_ID = '@@posts/FETCH_REQUEST_BY_ID';   // for get post by id 
+  export const FETCH_SUCCESS_BY_ID = '@@posts/FETCH_SUCCESS_BY_ID';   // for get post by id - success 
+  export const UPDATE_REQUEST_BY_ID = '@@posts/UPDATE_REQUEST_BY_ID';  // for update post by id
+  export const UPDATE_SUCCESS_BY_ID = '@@posts/UPDATE_SUCCESS_BY_ID'   // // for update post by id - success
 
 
 Step 6: 
@@ -178,7 +156,7 @@ case PostsActionTypes.UPDATE_SUCCESS_BY_ID:
 
 Step 7: 
 ===
-  Fix the errors in src/store/index.ts 
+  Fix the errors in src/store/index.js 
   --
   path may be corrected.. 
 
@@ -197,6 +175,9 @@ Step 8:
     watcher function will be actively watching for actions from components 
     upon getting actions then the handler will be called 
 
+  import { call, takeEvery } from "redux-saga/effects";
+  import { fetchError, fetchSuccess } from "./actions";
+  import { FETCH_REQUEST } from "./types"
 
   function* handleFetch() {
     try {
@@ -220,7 +201,7 @@ Step 8:
   // This is our watcher function. We use `take*()` functions to watch Redux for a specific action
   // type, and run our saga, for example the `handleFetch()` saga above.
   function* watchFetchRequest() {
-    yield takeEvery(PostsActionTypes.FETCH_REQUEST, handleFetch)
+    yield takeEvery(FETCH_REQUEST, handleFetch)
   }
 
 
@@ -236,11 +217,11 @@ fix the import related errors in the sagas.ts
 
 Step 10:
 ----
-  Have util file in src/utils/api.ts 
+  Have util file in src/utils/api.js 
   
   have the following code 
 
-  export async function callApi(method: string, url: string, data?: any) {
+  export async function callApi(method, url, data) {
     const res = await fetch( url, {
       method,
       headers: {
@@ -253,7 +234,7 @@ Step 10:
 
 
 Step 11:
-  have store/posts/actions.ts file with the following code 
+  have store/posts/actions.js file with the following code 
   let's work with handling the resp and patching it up the reducer 
   these functions with action types only helps reducers capture them in switch case 
 
@@ -266,9 +247,9 @@ Step 11:
   export const fetchSuccess = (data: Post[]) => action(PostsActionTypes.FETCH_SUCCESS, data)
   export const fetchError = (message: string) => action(PostsActionTypes.FETCH_ERROR, message)
 
-Step 12:
+Step 12: [May Not be Required]
 ====
-  in src/store/posts/types.ts
+  /* in src/store/posts/types.ts
 
   have the following code on top of all lines
 
@@ -282,8 +263,9 @@ Step 12:
   // Feel free to replace `any` with
   // the expected return type of your API response.
   export type ApiResponse = Record<string, any>
+  */
 
-Step 13: 
+Step 13:  [May Not be Required]
 ----
   to fix error in actions.ts 
   install the following package
@@ -292,7 +274,7 @@ Step 13:
   
 Step 14: 
 ---
-  in src/store/posts/sagas.ts 
+  in src/store/posts/sagas.js 
   
   at last write the following lines 
   
@@ -309,7 +291,7 @@ Step 14:
 
 Step 15: 
 ---
-  in store/index.ts 
+  in store/index.js 
 
   now, like our posts feature is having a saga, many features will also have on their own. 
 
@@ -332,9 +314,9 @@ Step 15:
     ])
   }
 
-Step 16:
+Step 16: [May not Required]
 ===
-  in src/main.tsx  
+  in src/main.js  
 
   import * as React from 'react'
   import { Provider } from 'react-redux'
@@ -369,41 +351,32 @@ Step 16:
 
 
 == 
-Step 17:
+Step 17: 
 ----
-  replace src/index.tsx with the following code and understand 
+  in src/index.js have the following code and understand 
 
-  import React from 'react';
-  import ReactDOM from 'react-dom';
+
+  import { Provider } from 'react-redux';
+  import configureStore from './configureStore';
   import { createBrowserHistory } from 'history';
 
-  import './index.css';
-  import * as serviceWorker from './serviceWorker';
-
-  import configureStore from './configureStore';
-  import Main from './main';
-
-  // We use hash history because this example is going to be hosted statically.
-  // Normally you would use browser history.
   const history = createBrowserHistory();
-  const initialState = window.INITIAL_REDUX_STATE
+  const initialState = 'INITIAL_REDUX_STATE'
 
   const store = configureStore(history, initialState);
 
   ReactDOM.render(
-    <Main store={store} history={history} />
-    ,
+    <React.StrictMode>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </React.StrictMode>,
     document.getElementById('root')
   );
 
-  // If you want your app to work offline and load faster, you can change
-  // unregister() to register() below. Note this comes with some pitfalls.
-  // Learn more about service workers: https://bit.ly/CRA-PWA
-  serviceWorker.unregister();
-
 =====
 
-Step 18: 
+Step 18: [May not be required]
 --- 
   have a type definition for environment variables 
   
@@ -418,11 +391,11 @@ Step 18:
     }
 
 =====
-Step 19: 
+Step 19: [May not be required]
 --- 
-  in PostList.tsx 
+  in PostList.js 
   
-  Let's make it a container -- and optimized for ts 
+  Let's make it a container
 
   before the comp class begins... write the following 
 
@@ -450,14 +423,16 @@ Step 19:
 
 Step 20:
 ===
-
+  
   after the comp class definitions are over... 
   at the end of the class.. have the following code
+
+  
 
   // It's usually good practice to only include one context at a time in a connected component.
   // Although if necessary, you can always include multiple contexts. Just make sure to
   // separate them from each other to prevent prop conflicts.
-  const mapStateToProps = ({ posts }: ApplicationState) => {
+  const mapStateToProps = ({ posts }) => {
     console.log(posts);
     return {
       loading: posts.loading,
@@ -480,6 +455,8 @@ Step 20:
   )(PostList);
 
   // fix the connect method related error  by importing  'import { connect } from 'react-redux';' 
+  // and another error by importing 
+            import { fetchRequest } from '../store/posts/actions'
 
 =====
 

@@ -4,9 +4,21 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+import { Provider } from 'react-redux';
+import { createBrowserHistory } from 'history';
+import configureStore from './configureStore';
+
+const history = createBrowserHistory();
+
+//const initialState = 'INITIAL_REDUX_STATE';
+
+const store = configureStore(history);
+
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );
