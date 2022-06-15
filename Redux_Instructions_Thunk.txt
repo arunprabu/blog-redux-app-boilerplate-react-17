@@ -1,7 +1,7 @@
 Redux 
 ---
 Step 0: 
-  npm i redux react-redux 
+  npm i redux@4.1.2 react-redux@7.2.6 
 
   redux  - core redux framework 
   react-redux   -- patches up react with redux seamlessy 
