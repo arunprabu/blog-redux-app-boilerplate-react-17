@@ -1,624 +1,1110 @@
-Step 0:
---
-  npm i redux@4.1.2 react-redux@7.2.6
+Redux Saga Sample Project Structure
 
-  The above mentioned versions are compatible with React v17 
+src/
+  assets/
+  components/
+    Posts/
+    Auth/
+    Reports/
+    Shared/
+  containers/
+    PostList/
+    Auth/
+    Reports/
+  store
+    
+---
 
-  redux -> Core Framework
-  react-redux -> patches up react with redux seamlessly 
+
+Redux 
+---
+Step 0: 
+  npm i redux@4.1.2 react-redux@7.2.6 
+
+  The above mentioned versions are compatible with React v 17. 
+
+  redux  - core redux framework 
+  react-redux   -- patches up react with redux seamlessy 
 
 Step 1: 
---
-  src/configureStore.js 
+----
+in src/configureStore.ts 
+  import { Store, createStore, applyMiddleware } from 'redux'
+  import createSagaMiddleware from 'redux-saga'
+  // `react-router-redux` is deprecated, so we use `connected-react-router`.
+  // This provides a Redux middleware which connects to our `react-router` instance.
+  import { routerMiddleware } from 'connected-react-router'
+  // We'll be using Redux Devtools. We can use the `composeWithDevTools()`
+  // directive so we can pass our middleware along with it
+  import { composeWithDevTools } from 'redux-devtools-extension'
+  // If you use react-router, don't forget to pass in your history type.
+  import { History } from 'history'
 
-  import { createStore } from "redux";
-
-  const store = createStore(); // Special param reducer is needed
-
-Step 2: 
---
-create src/configureStore.js 
-
-  // Step 1.1: Let's create store 
-  import { createStore } from "redux";
-
-  // Step 1.2 Let's export configure store function
-  export default function configureStore(){
+  // Let's configue the store/ 
+  // store configuration can have initialState and has to return store.
+  export default function configureStore(initialState: any){
     const store = createStore(
-
-    ); // Special param reducer is needed
-    
-    console.log(store);
+      initialState
+    );
     return store;
   }
 
 
-Step 3: 
----
-// step 3: Let's have the reducer in store/posts/reducer.js 
 
-const postReducer = (state = {}, action) => {
+Step 2:
+in src/store/index.ts 
 
-  return state;
+  import { combineReducers } from 'redux'
+  import { all, fork } from 'redux-saga/effects'
+  import { connectRouter, RouterState } from 'connected-react-router'
+  import { History } from 'history'
 
-}
 
-export default postReducer;
+  // The top-level state object
+  export interface ApplicationState {
+    posts: PostsState  // error here 
+    router: RouterState
+  } 
 
---
+  // Whenever an action is dispatched, Redux will update each top-level application state property
+  // using the reducer with the matching name. It's important that the names match exactly, and that
+  // the reducer acts on the corresponding ApplicationState property type.
+  export const createRootReducer = (history: History) =>
+    combineReducers({
+      posts: postsReducer,   //error here
+      router: connectRouter(history)
+    })
+
+
+
+Step 3:
+----
+  in src/store/posts/reducer.ts 
+
+    import { Reducer } from 'redux';
+
+    // Type-safe initialState!
+    const initialState: PostsState = {
+      postList: [],
+      errors: undefined,
+      loading: false,
+      status: undefined
+    }
+
+    // everything will remain type-safe.
+    const reducer: Reducer<PostsState> = (state = initialState, action) => {
+      switch (action.type) {
+        case 'ADD':
+          return state;
+        default: 
+          return state;
+      }
+    }
+
+
+    // Instead of using default export, we use named exports. 
+    // That way we can group these exports
+    // inside the `index.js` folder.
+    export { reducer as postsReducer }
+
+
+===
 Step 4: 
-  LEt's have all possible action types specific to posts feature 
-  in src/store/posts/types.js have the following 
+----  
+  in store/posts/types.ts 
+    have the following actions 
 
   // Define however naming conventions you'd like for your action types, but
   // personally, I use the `@@context/ACTION_TYPE` convention, to follow the convention
   // of Redux's `@@INIT` action.
-  export const CREATE_REQUEST = '@@posts/CREATE_REQUEST';  // for create post
-  export const CREATE_SUCCESS = '@@posts/CREATE_SUCCESS';   // // for create post - success
-  export const CREATE_ERROR = '@@posts/CREATE_ERROR';   // // for create post - error
-
-  export const FETCH_REQUEST = '@@posts/FETCH_REQUEST';  // for get all posts
-  export const FETCH_SUCCESS = '@@posts/FETCH_SUCCESS';  // for get all posts success
-  export const FETCH_ERROR = '@@posts/FETCH_ERROR';      // for post related error
-
-  export const FETCH_REQUEST_BY_ID = '@@posts/FETCH_REQUEST_BY_ID';   // for get post by id 
-  export const FETCH_SUCCESS_BY_ID = '@@posts/FETCH_SUCCESS_BY_ID';   // for get post by id - success 
-  export const FETCH_ERROR_BY_ID = '@@posts/FETCH_ERROR_BY_ID';   // for get post by id - error 
-
-  export const UPDATE_REQUEST_BY_ID = '@@posts/UPDATE_REQUEST_BY_ID';  // for update post by id
-  export const UPDATE_SUCCESS_BY_ID = '@@posts/UPDATE_SUCCESS_BY_ID'   // // for update post by id - success
-  export const UPDATE_ERROR_BY_ID = '@@posts/UPDATE_ERROR_BY_ID'   // // for update post by id - error
-
-===
-Step 5: 
-  Refer the action types in reducer 
-
-  import { CREATE_REQUEST, FETCH_REQUEST, FETCH_REQUEST_BY_ID, FETCH_SUCCESS, UPDATE_REQUEST_BY_ID } from "./types";
-
-  const postReducer = (state = {}, action) => {
-
-    switch(action.type){
-      case CREATE_REQUEST:
-      case FETCH_REQUEST: 
-      case FETCH_REQUEST_BY_ID:
-      case UPDATE_REQUEST_BY_ID: 
-        // set is loading to true 
-        return state;
-
-      case FETCH_SUCCESS:
-        // set is loading to false and will return array of obj inside state 
-        return state;
-
-      default:
-        return state;
-    }
-
+  export enum PostsActionTypes {
+    CREATE_REQUEST = '@@posts/CREATE_REQUEST',  // for update post by id
+    CREATE_SUCCESS = '@@posts/CREATE_SUCCESS',   // // for update post by id - success
+    FETCH_REQUEST = '@@posts/FETCH_REQUEST',  // for get all posts
+    FETCH_SUCCESS = '@@posts/FETCH_SUCCESS',  // for get all posts success
+    FETCH_ERROR = '@@posts/FETCH_ERROR',      // for post related errors 
+    FETCH_REQUEST_BY_ID = '@@posts/FETCH_REQUEST_BY_ID',   // for get post by id 
+    FETCH_SUCCESS_BY_ID = '@@posts/FETCH_SUCCESS_BY_ID',   // for get post by id - success 
+    UPDATE_REQUEST_BY_ID = '@@posts/UPDATE_REQUEST_BY_ID',  // for update post by id
+    UPDATE_SUCCESS_BY_ID = '@@posts/UPDATE_SUCCESS_BY_ID'   // // for update post by id - success
   }
 
-  export default postReducer;
+  // Declare state types with `readonly` modifier to get compile time immutability.
+  // https://github.com/piotrwitek/react-redux-typescript-guide#state-with-type-level-immutability
+  export interface PostsState {
+    readonly loading: boolean
+    readonly postList: []
+    readonly errors?: string,
+    readonly status?: boolean
+  }
+
+====
+
+Step 5: 
+  in store/posts/reducer.ts,
+    import { PostsState, PostsActionTypes } from './types';
+
+    and the error will go off
+
+  ======
+
 
 Step 6: 
----
-  import { combineReducers } from "redux";
-  import postReducer from "./posts/reducer";
+===
+in store/posts/reducer.ts 
+Add proper switch cases as we have possible action types for our project identified
 
-  // Step 6: Whenever an action is dispatched, redux will update each top-level app state property
-  // using the reducer with the matching name. 
-  export const createRootReducer = (history) => {
-    return combineReducers({
-      posts: postReducer
-    })
-  }
+case PostsActionTypes.CREATE_REQUEST || 
+         PostsActionTypes.FETCH_REQUEST || 
+         PostsActionTypes.FETCH_REQUEST_BY_ID || 
+         PostsActionTypes.UPDATE_REQUEST_BY_ID: 
+      return { ...state, loading: true }
 
+case PostsActionTypes.CREATE_SUCCESS: 
+    return state;
+
+case PostsActionTypes.FETCH_SUCCESS: 
+  return state;
+
+case PostsActionTypes.FETCH_ERROR: 
+  return state;
+
+case PostsActionTypes.FETCH_SUCCESS_BY_ID: 
+  return state;
+
+case PostsActionTypes.UPDATE_SUCCESS_BY_ID: 
+  return state;
 
 
 Step 7: 
---
-  setting up initial state and history into the store 
+===
+  Fix the errors in src/store/index.ts 
+  --
+  path may be corrected.. 
 
-    export default function configureStore(history, initialState){ // Step 7: history and initial state 
-      const store = createStore(
-        // Step 7: Let's exec createRootReducer(history) 
-        createRootReducer(history),
-        initialState
-      ); // Special param reducer is needed
-      
-      console.log(store);
-      return store;
-    }
 
 Step 8:
+-----
+  create store/posts/sagas.ts for  features 
+
+
+  generator function for handling ajax calls    -- handler 
+    it will send ajax calls 
+    get the resp and yield the result to reducers 
+
+
+  generator function for watching over the req from component   -- watcher 
+    watcher function will be actively watching for actions from components 
+    upon getting actions then the handler will be called 
+
+
+  function* handleFetch() {
+    try {
+      // To call async functions, use redux-saga's `call()`.
+      const res = yield call(callApi, 'get', API_ENDPOINT)
+
+      if (res.error) {
+        yield put(fetchError(res.error))
+      } else {
+        yield put(fetchSuccess(res))
+      }
+    } catch (err) {
+      if (err instanceof Error && err.stack) {
+        yield put(fetchError(err.stack))
+      } else {
+        yield put(fetchError('An unknown error occured.'))
+      }
+    }
+  }
+
+  // This is our watcher function. We use `take*()` functions to watch Redux for a specific action
+  // type, and run our saga, for example the `handleFetch()` saga above.
+  function* watchFetchRequest() {
+    yield takeEvery(PostsActionTypes.FETCH_REQUEST, handleFetch)
+  }
+
+
+Step 9:
+---- 
+fix the import related errors in the sagas.ts 
 ---
-  Let's work on to get the store data 
+  import { all, call, fork, put, takeEvery } from 'redux-saga/effects'
+  import { PostsActionTypes } from './types'
+  import { callApi } from '../../utils/api';
 
-  in src/index.js have the following 
+  const API_ENDPOINT = 'http://jsonplaceholder.typicode.com/posts';
 
-  import configureStore from './configureStore';
+Step 10:
+----
+  Have util file in src/utils/api.ts 
+  
+  have the following code 
+
+  export async function callApi(method: string, url: string, data?: any) {
+    const res = await fetch( url, {
+      method,
+      headers: {
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    return res.json();
+  }
+
+
+Step 11:
+  have store/posts/actions.ts file with the following code 
+  let's work with handling the resp and patching it up the reducer 
+  these functions with action types only helps reducers capture them in switch case 
+
+
+  import { PostsActionTypes } from './types';
+  export const fetchRequest = () => action(PostsActionTypes.FETCH_REQUEST)
+
+  // Remember, you can also pass parameters into an action creator. Make sure to
+  // type them properly as well.
+  export const fetchSuccess = (data: Post[]) => action(PostsActionTypes.FETCH_SUCCESS, data)
+  export const fetchError = (message: string) => action(PostsActionTypes.FETCH_ERROR, message)
+
+Step 12:
+====
+  in src/store/posts/types.ts
+
+  have the following code on top of all lines
+
+  export interface Post extends ApiResponse{
+    id?: number
+    title?: string
+    body?: string
+  }
+
+  // This type is basically shorthand for `{ [key: string]: any }`. 
+  // Feel free to replace `any` with
+  // the expected return type of your API response.
+  export type ApiResponse = Record<string, any>
+
+Step 13: 
+----
+  to fix error in actions.ts 
+  install the following package
+    
+    npm i typesafe-actions
+  
+Step 14: 
+---
+  in src/store/posts/sagas.ts 
+  
+  at last write the following lines 
+  
+  // We can also use `fork()` here to split our saga into multiple watchers.
+  function* postsSaga() {
+    yield all([
+        fork(watchFetchRequest)
+    ])
+  }
+
+  export default postsSaga;
+  
+====
+
+Step 15: 
+---
+  in store/index.ts 
+
+  now, like our posts feature is having a saga, many features will also have on their own. 
+
+  so, we have to make rootSaga out of all sagas .
+
+  have these imports in the same file 
+  import { all, fork } from 'redux-saga/effects';
+  import postsSaga from './posts/sagas';
+
+
+  at last the mentioned file... 
+
+  // Here we use `redux-saga` to trigger actions asynchronously. `redux-saga` uses something called a
+  // "generator function", which you can read about here:
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*
+  export function* rootSaga() {
+    yield all(
+      [fork(postsSaga),
+      // another feature's saga will come here
+    ])
+  }
+
+Step 16:
+===
+  in src/main.tsx  
+
+  import * as React from 'react'
+  import { Provider } from 'react-redux'
+  import { ConnectedRouter } from 'connected-react-router'
+  import { Store } from 'redux';
+  import { History } from 'history';
+
+  import { ApplicationState } from './store'
+  import App from './App';
+
+  // Any additional component props go here.
+  interface MainProps {
+    store: Store<ApplicationState>
+    history: History
+  }
+
+  // Create an intersection type of the component props and our Redux props.
+  const Main: React.FC<MainProps> = ({ store, history }) => {
+    return (
+      <Provider store={store}>
+        <ConnectedRouter history={history}>
+          <App />
+        </ConnectedRouter>
+      </Provider>
+    )
+  }
+
+  // Normally you wouldn't need any generics here (since types infer from the passed functions).
+  // But since we pass some props from the `index.js` file, we have to include them.
+  // For an example of a `connect` function without generics, see `./containers/LayoutContainer`.
+  export default Main;
+
+
+== 
+Step 17:
+----
+  replace src/index.tsx with the following code and understand 
+
+  import React from 'react';
+  import ReactDOM from 'react-dom';
   import { createBrowserHistory } from 'history';
 
+  import './index.css';
+  import * as serviceWorker from './serviceWorker';
+
+  import configureStore from './configureStore';
+  import Main from './main';
+
+  // We use hash history because this example is going to be hosted statically.
+  // Normally you would use browser history.
   const history = createBrowserHistory();
+  const initialState = window.INITIAL_REDUX_STATE
 
-  // getting store data with history
-  const store = configureStore(history);
-  console.log(store);
-
-Step 9: 
---
-  in src/index.js -- let's provide the store data to the whole app. 
+  const store = configureStore(history, initialState);
 
   ReactDOM.render(
-    <React.StrictMode>
-      <Provider store={store}>    { /* providing store data */}
-        <App />
-      </Provider>
-    </React.StrictMode>,
+    <Main store={store} history={history} />
+    ,
     document.getElementById('root')
   );
 
-Step 10:
----
+  // If you want your app to work offline and load faster, you can change
+  // unregister() to register() below. Note this comes with some pitfalls.
+  // Learn more about service workers: https://bit.ly/CRA-PWA
+  serviceWorker.unregister();
 
-  in PostList.js 
-
-  have the following 
-
-    import React, { Component } from 'react'
-    import { connect } from 'react-redux';
-    import { Link } from 'react-router-dom';
-    import { FETCH_REQUEST } from '../store/posts/types';
-
-    export class PostList extends Component {
-
-      componentDidMount() {
-        console.log('2. Inside componentDidMount');
-        // dispatch an action type 'FETCH_REQUEST' 
-        console.log(this.props);
-        
-        // this.props.dispatch({
-        //   type: FETCH_REQUEST
-        // })
-      }
-
-      render() {
-        console.log('Inside render');
-        console.log(this.props);
-
-        if (this.props.isLoading) {
-          return (
-            <div className="text-center spinner-border text-success" role="status">
-            </div>
-          )
-        }
-
-        return (
-          <div>
-            <h3>Post List</h3>
-            <div className="list-group text-left">
-              <div className="list-group-item list-group-item-action text-start">
-                <div className="d-flex w-100 justify-content-between">
-                  <h5 className="mb-1">
-                    <Link to={`/posts/1`}>post 1</Link>
-                  </h5>
-                  <small>Post Id: 1</small>
-                </div>
-                <p className="mb-1 text-left">sample post</p>
-              </div>
-
-              <div className='alert alert-warning'>
-                No Posts Found. You can add one!
-              </div>
-            </div>
-          </div>
-        )
-      }
-    }
-
-    // writing a fn to subscribe to the store data.
-    // this has to mandatorily return the store data - that will become props 
-    const mapStateToProps = ({ posts }) => {
-      console.log('1. inside mapStateToProps');
-      return {
-        postList: posts.postList,
-        isLoading: posts.isLoading,
-        errors: posts.errors
-      }
-    }
-
-    // connect() will get you dispatch fn as part of props 
-    // connect(mapStateToProps) will get you dispatch fn and store data and convert them to props 
-    export default connect(mapStateToProps)(PostList);
-
-
-
-======
-Sidenotes 
-    Async Calls / Side Effects in Redux 
-    ===
-      Middleware is needed 
-
-      1. redux-thunk 
-
-
-      2. redux-saga (preferred for multiple/ subsequent network calls)
-          
-===
-
-Step 11: 
---
-  create src/utils/api.js -- with a fn to make ajax call using native fetch api 
-
-    export async function callApi(method, url, data) {
-      const res = await fetch( url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      return res.json();
-    }
-
-Step 12:
----
-  Let's work on Redux-Saga 
-
-  npm i redux-saga 
-
-  and also in store/posts/sagas.js 
-  have the following 
-
-    import { call, put, takeEvery, all, fork } from "redux-saga/effects";
-    import { callApi } from "../../utils/api";
-    import { FETCH_REQUEST } from "./types";
-
-    const POST_API_URL = 'https://jsonplaceholder.typicode.com/posts';
-
-    // worker saga -- can connect with rest api, and dispatch 
-    function* handleFetch(){
-
-      try{
-        // to call ajax logic -- use redux-saga's call()
-        const res = yield call( callApi, 'get', POST_API_URL);
-        if(res.error){
-          // dispatch with error -- use put() from redux-saga
-          
-        }else{
-          // dispatch with success / data -- use put() from redux-saga
-        }
-
-      }
-      catch(err){
-        if(err){
-          // dispatch with error -- use put() from redux-saga
-        }
-      }
-    }
-
-
-    // watcher saga -- watch specific action type and run the saga 
-    function* watchFetchRequest(){
-      yield takeEvery(FETCH_REQUEST, handleFetch);
-    }
-
-    // feature saga 
-    function* postsSaga(){
-      yield all([
-        fork(watchFetchRequest)
-      ])
-    }
-
-    export default postsSaga;
-
-===
-
-Step 13: 
---
-  creating root saga in store/index.js itself 
-
-    // creating root saga here itself.. it can be in rootSaga.js file also 
-    export function* rootSaga(){
-      yield all([
-        fork(postsSaga),
-        // another feature's saga can come here
-      ])
-    }
-
-Step 14: 
---
-  Setup actions for the fetch request 
-  import { FETCH_REQUEST } from "./types"
-
-  export const fetchRequest = () => {
-    return {
-      type: FETCH_REQUEST
-    }
-  }
-
-Step 15: 
---  
-  Finish the redux-saga middleware integration 
-
-  // Step 1.1: Let's create store 
-  import { createStore, applyMiddleware } from "redux";
-  import createSagaMiddleware from 'redux-saga';
-  import { composeWithDevTools } from 'redux-devtools-extension';
-
-  import { createRootReducer, rootSaga } from "./store";
-
-  // Step 1.2 Let's export configure store function
-  export default function configureStore(history, initialState){
-
-    const composeEnhancers = composeWithDevTools({
-      // Specify here name, actionsBlacklist, actionsCreators and other options
-    });
-
-    const sagaMiddleware = createSagaMiddleware();
-
-    const store = createStore(
-      // Step 7: Let's exec createRootReducer(history) 
-      createRootReducer(history),
-      initialState,
-      composeEnhancers(applyMiddleware(sagaMiddleware))
-    ); // Special param reducer is needed
-    
-    // NEVER FORGET TO RUN THE ROOT SAGA
-    sagaMiddleware.run(rootSaga);
-    return store;
-  }
-
-
-==
-Step 16: 
----
-  From post reducer return state properly 
-
-
-  const postReducer = (state = initialState, action) => {
-    console.log('Inside postReducer');
-    switch(action.type){
-      case CREATE_REQUEST:
-      case FETCH_REQUEST: 
-      case FETCH_REQUEST_BY_ID:
-      case UPDATE_REQUEST_BY_ID: 
-        // set is loading to true 
-        return {...state, isLoading: true };
-
-      case FETCH_SUCCESS:
-        // set is loading to false and will return array of obj inside state 
-        return {...state, isLoading: false, postList: action.payload};
-
-      case FETCH_ERROR: 
-        return {...state, isLoading: false, error: action.payload};
-
-      default:
-        return state;
-    }
-
-  }
-
-Step 17: 
---
- Now, receive the posts and mapDispatchToProps in PostList.js 
-
-
-  // writing a fn to subscribe to the store data.
-  // this has to mandatorily return the store data - that will become props 
-  const mapStateToProps = ({ posts }) => {
-    console.log('1. inside mapStateToProps');
-    return {
-      postList: posts.postList,
-      isLoading: posts.isLoading,
-      errors: posts.errors
-    }
-  }
-
-  // you can access the keys of this obj in 'this.props.'
-  const mapDispatchToProps = {
-    fetchRequest: fetchRequest
-  }
-
-  // connect() will get you dispatch fn as part of props 
-  // connect(mapStateToProps) will get you dispatch fn and store data and convert them to props 
-  export default connect(mapStateToProps, mapDispatchToProps)(PostList);
+=====
 
 Step 18: 
----
-  Finally, receive the posts in PostList.js 
+--- 
+  have a type definition for environment variables 
   
-  render() {
-    console.log('Inside render');
-    console.log(this.props);
+  in src/react-app-env.d.ts 
 
-    if (this.props.isLoading) {
-      return (
-        <div className="text-center spinner-border text-success" role="status">
-        </div>
-      )
+  have the following code 
+
+    /// <reference types="react-scripts" />
+
+    interface Window {
+      INITIAL_REDUX_STATE: any
     }
 
-    let posts = null;
-    if (this.props.postList && this.props.postList.length > 0) {
-      posts = this.props.postList.map( (post, index) => {
-        return(
-          <div className="list-group-item list-group-item-action text-start" key={index + post.id}>
-            <div className="d-flex w-100 justify-content-between">
-              <h5 className="mb-1">
-                <Link to={`/posts/${post.id}`}>{post.title}</Link>
-              </h5>
-              <small>Post Id: {post.id}</small>
-            </div>
-            <p className="mb-1 text-left">{post.body}</p>
-          </div>
+=====
+Step 19: 
+--- 
+  in PostList.tsx 
+  
+  Let's make it a container -- and optimized for ts 
+
+  before the comp class begins... write the following 
+
+  import { ApplicationState } from '../store';
+  import { Post } from '../store/posts/types';
+  import { fetchRequest } from '../store/posts/actions'
+
+  // Separate state props + dispatch props to their own interfaces.
+  interface PropsFromState {
+    loading: boolean
+    postList: Post[]
+    errors?: string
+  }
+
+  // We can use `typeof` here to map our dispatch types to the props, like so.
+  interface PropsFromDispatch {
+    fetchRequest: typeof fetchRequest
+  }
+
+  // Combine both state + dispatch props - as well as any props we want to pass - in a union type.
+  type AllProps = PropsFromState & PropsFromDispatch
+
+  class PostList extends Component<AllProps> {
+    
+
+Step 20:
+===
+
+  after the comp class definitions are over... 
+  at the end of the class.. have the following code
+
+  // It's usually good practice to only include one context at a time in a connected component.
+  // Although if necessary, you can always include multiple contexts. Just make sure to
+  // separate them from each other to prevent prop conflicts.
+  const mapStateToProps = ({ posts }: ApplicationState) => {
+    console.log(posts);
+    return {
+      loading: posts.loading,
+      errors: posts.errors,
+      postList: posts.postList
+    }
+  }
+
+  // mapDispatchToProps is especially useful for constraining our actions to the connected component.
+  // You can access these via `this.props`.
+  const mapDispatchToProps = {
+    fetchRequest
+  }
+
+  // Now let's connect our component!
+  // With redux v4's improved typings, we can finally omit generics here.
+  export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )(PostList);
+
+  // fix the connect method related error  by importing  'import { connect } from 'react-redux';' 
+
+=====
+
+Step 21: 
+---
+  in comp class 
+
+  componentDidMount() {
+    console.log(this.props);
+    const { fetchRequest } = this.props;
+    fetchRequest()
+  }
+
+=========
+
+Step 22: 
+  import React, { Component } from 'react';
+  import { NavLink, RouteComponentProps } from "react-router-dom";
+  import { connect } from 'react-redux';
+  import { Card, Spin } from 'antd';
+  import Title from 'antd/lib/typography/Title';
+
+  import { ApplicationState } from '../store';
+  import { Post } from '../store/posts/types';
+  import { fetchRequest } from '../store/posts/actions'
+
+  // Separate state props + dispatch props to their own interfaces.
+  interface PropsFromState {
+    loading: boolean
+    postList: Post[]
+    errors?: string
+  }
+
+  // We can use `typeof` here to map our dispatch types to the props, like so.
+  interface PropsFromDispatch {
+    fetchRequest: typeof fetchRequest
+  }
+
+  // Combine both state + dispatch props - as well as any props we want to pass - in a union type.
+  type AllProps = PropsFromState & PropsFromDispatch
+
+  //const API_ENDPOINT = 'http://jsonplaceholder.typicode.com/posts';
+
+
+  class PostList extends Component<AllProps> {
+
+    componentDidMount() {
+      console.log(this.props);
+      const { fetchRequest } = this.props;
+      fetchRequest()
+    }
+
+    render() {
+      console.log(this.props); 
+      const { postList } = this.props;
+
+      let allPosts = null;
+
+      allPosts = postList.map(post => {
+        return (
+          <Card title={post.title} style={{ width: "100%" }} key={`card${post.id}`}>
+            <p>
+              {post.body}
+            </p>
+            <NavLink to={`/posts/${post.id}`}>View More... </NavLink>
+          </Card>
         )
       })
+
+      return (
+        <>
+          <Title level={2}>View Posts</Title>
+          
+            { postList && postList.length > 0 ? 
+                allPosts :
+                <Spin size="large" />
+            }
+          
+        </>
+      )
     }
+  }
+
+  // It's usually good practice to only include one context at a time in a connected component.
+  // Although if necessary, you can always include multiple contexts. Just make sure to
+  // separate them from each other to prevent prop conflicts.
+  const mapStateToProps = ({ posts }: ApplicationState) => {
+    console.log(posts);
+    return {
+      loading: posts.loading,
+      errors: posts.errors,
+      postList: posts.postList
+    }
+  }
+
+  // mapDispatchToProps is especially useful for constraining our actions to the connected component.
+  // You can access these via `this.props`.
+  const mapDispatchToProps = {
+    fetchRequest
+  }
+
+  // Now let's connect our component!
+  // With redux v4's improved typings, we can finally omit generics here.
+  export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )(PostList)
+
+
+=====
+
+Step 23: 
+----
+  Add the following lines in actions.ts 
+
+
+  // for post details 
+  export const fetchRequestById = (postId: string) => action(PostsActionTypes.FETCH_REQUEST_BY_ID, postId)
+  export const fetchSuccessById = (data: Post) => action(PostsActionTypes.FETCH_SUCCESS_BY_ID, data);
+
+
+Step 24: 
+----
+
+in store/posts/sagas.ts
+
+function* handleFetchById(action: ReturnType<typeof fetchRequestById>) {
+  try {
+    // To call async functions, use redux-saga's `call()`.
+    const res = yield call(callApi, 'get', `${API_ENDPOINT}/${action.payload}` )
+
+    if (res.error) {
+      yield put(fetchError(res.error))
+    } else {
+      yield put(fetchSuccessById(res))
+    }
+  } catch (err) {
+    if (err instanceof Error && err.stack) {
+      yield put(fetchError(err.stack))
+    } else {
+      yield put(fetchError('An unknown error occured.'))
+    }
+  }
+}
+
+function* watchFetchById() {
+  yield takeEvery(PostsActionTypes.FETCH_REQUEST_BY_ID, handleFetchById)
+}
+
+
+add the following in the same file, before last line of export statement
+
+// We can also use `fork()` here to split our saga into multiple watchers.
+function* postsSaga() {
+  yield all([
+      fork(watchFetchRequest), 
+      fork(watchFetchById)
+  ])
+}
+
+
+Step 25: 
+----
+  in store/posts/reducer.ts
+
+  first case statment should be the following
+    case PostsActionTypes.CREATE_REQUEST || 
+          PostsActionTypes.FETCH_REQUEST || 
+          PostsActionTypes.FETCH_REQUEST_BY_ID || 
+          PostsActionTypes.UPDATE_REQUEST_BY_ID: 
+        return { ...state, loading: true }
+
+  and handle the case for FETCH_SUCCESS_BY_ID also. 
+
+  case PostsActionTypes.FETCH_SUCCESS_BY_ID: 
+      return { ...state, loading: false, post: action.payload }
+
+
+
+Step 26:
+----
+  in PostDetails.tsx 
+    send a call from the component 
+
+  before the class write the following ,
+
+    // Separate state props + dispatch props to their own interfaces.
+    interface PropsFromState {
+      loading: boolean
+      post: any
+      errors?: string,
+      status?: boolean
+    }
+
+    interface PropsFromDispatch {
+      getPostById: typeof fetchRequestById
+    }
+
+    interface RouteParams {
+      id: string
+    }
+
+    // Combine both state + dispatch props - as well as any props we want to pass - in a union type.
+    type AllProps = PropsFromState & PropsFromDispatch & RouteComponentProps<RouteParams>
+
+
+  in the class 
+    class PostDetails extends Component<AllProps>  {
+
+
+  after the class 
+    work with mapStateToProps and mapDispatchToProps
+
+   
+    // It's usually good practice to only include one context at a time in a connected component.
+    // Although if necessary, you can always include multiple contexts. Just make sure to
+    // separate them from each other to prevent prop conflicts.
+    const mapStateToProps = ({ posts }: ApplicationState) => {
+      console.log(posts);
+      return{
+        post: posts.post,
+        errors: posts.errors,
+        status: posts.status
+      }
+    }
+
+    // mapDispatchToProps is especially useful for constraining our actions to the connected component.
+    // You can access these via `this.props`.
+    const mapDispatchToProps: PropsFromDispatch = {
+      getPostById: fetchRequestById
+    }
+
+    // Now let's connect our component!
+    // With redux v4's improved typings, we can finally omit generics here.
+    export default connect(
+      mapStateToProps,
+      mapDispatchToProps
+    )(PostDetails); 
+
+
+Step 27: 
+-----
+  In PostDetails.tsx,
+
+  have the componentDidMount block 
+
+  componentDidMount() {
+    const { match, getPostById } = this.props;
+    
+    getPostById(match.params.id);
+  }
+
+
+  and then, in the render() method 
+
+  render() {
+    console.log(this.props);
+    const { loading, post } = this.props;
+
+    
+
+    // for getting updated form data during submit 
+    //Refer https://ant.design/components/form/#components-form-demo-form-in-modal
+    // and  https://ant.design/components/modal/
 
     return (
       <div>
-        <h3>Post List</h3>
-        <div className="list-group text-left">
-          
-          { this.props.postList && this.props.postList.length > 0?
-            posts
-            :
-            <div className='alert alert-warning'>
-              No Posts Found. You can add one!
-            </div>
-          }
-          
-        </div>
+        <Title level={2}>View Post Details</Title>
+        { post?
+            <Card title={post.title} style={{ width: '100%' }}>
+              <p>{post.body}</p>
+              
+              <Button type="primary" onClick={this.showModal}>Edit</Button> <Button danger>Delete</Button>
+              <Modal
+                title="Basic Modal"
+                visible={this.state.visible}
+                footer={[
+                  <Button key="back" onClick={this.handleCancel}>
+                    Cancel
+                  </Button>,
+                  <Button form="myForm" type="primary" key="submit" htmlType="submit">
+                    Update
+                  </Button>
+
+                ]}
+              >
+                <Form
+                  id='myForm'
+                  initialValues={{
+                    'title': post.title,
+                    'body': post.body
+                  }}
+                  {...layout}
+                  name="basic"
+                  onFinish={this.onFinish}
+                  onFinishFailed={this.onFinishFailed}
+              >
+                <Form.Item
+                  label="Post Title"
+                  name="title"                  
+                  rules={[{ required: true, message: 'Please input your postTitle!' }]}
+                >
+                  <Input/>
+                </Form.Item>
+
+                <Form.Item
+                  label="Post Body"
+                  name="body"
+                  rules={[{ required: true, message: 'Please input your postContent!' }]}
+                >
+                  <Input.TextArea />
+                </Form.Item>
+
+                
+              </Form>
+              </Modal>
+            </Card>
+          :
+          <Spin size="large" />
+        }
+        
       </div>
     )
   }
 
-Step 19:
---
-  Listing posts over. Check the app. Let's move on to add post 
 
-Sidenotes: 
-----
-  [UPDATED] api.js file with required header content type for form submission
+Step 28: 
+====
+Check the app. PostDetails will work fine.. 
+ Let's work on Update Post
+  in store/posts/actions.ts
 
-Step 20:
---
-  Now, let's work on creating post.
-  in PostForm.js 
 
-    handleSubmit = (event) => {
-      event.preventDefault();
-      const formData = {
-        title: this.postTitle.value,
-        body: this.postBody.value
+  // for post details update
+  export const updateRequestById = (post: Post) => action(PostsActionTypes.UPDATE_REQUEST_BY_ID, post)
+  export const updateSuccessById = (data: Post) => action(PostsActionTypes.UPDATE_SUCCESS_BY_ID, data);
+
+
+Step 29:
+====
+
+  function* handleUpdateById(action: ReturnType<typeof updateRequestById>) {
+    try {
+      // To call async functions, use redux-saga's `call()`.
+      const res = yield call(callApi, 'put', `${API_ENDPOINT}/${action.payload.id}` )
+
+      if (res.error) {
+        yield put(fetchError(res.error))
+      } else {
+        yield put(updateSuccessById(res))
       }
-
-      console.log(formData); // Form data is ready -- we can work on dispatch
-      console.log(this.props);
-
-      
-      this.props.dispatch(createPostRequest(formData));
-
-      this.postTitle.value = '';
-      this.postBody.value = '';
-    }
-
-    render() {
-      return (
-        <div>
-          <h3>Create Post!</h3>
-    
-          <form className='text-left' onSubmit={this.handleSubmit}>
-            <input required type="text"
-              placeholder="Enter Post Title"
-              className='form-control' ref={(inputEl) => this.postTitle = inputEl }/><br />
-
-            <textarea required rows="5" cols="28"
-              placeholder="Enter Post"
-              className='form-control' ref={(textAreaEl) => this.postBody = textAreaEl }/><br />
-            <button className='btn btn-primary' type='submit'>Add Post</button>
-          </form>
-        </div>
-      )
-    }
-
-
----
-Step 21: 
-
-  Now, in posts/sagas.js 
-  after necessary imports, feature saga  should be updated 
-
-  import { createPostError, createPostSuccess, fetchError, fetchSuccess } from "./actions";
-  import { CREATE_REQUEST, FETCH_REQUEST } from "./types";
-
-  Have the following worker and watcher saga 
-  // Now, let's work on create post
-  // worker saga -- can connect with rest api, and dispatch 
-  function* handleCreatePost(data){
-    try{
-      // to call ajax logic -- use redux-saga's call()
-      const res = yield call( callApi, 'post', POST_API_URL, data.payload);
-      if(res.error){
-        // dispatch with error -- use put() from redux-saga
-        yield put(createPostError(res.error))
-      }else{
-        // dispatch with success / data -- use put() from redux-saga
-        yield put(createPostSuccess(res))
-      }
-
-    }
-    catch(err){
-      if(err){
-        // dispatch with error -- use put() from redux-saga
-        yield put(createPostError(err))
+    } catch (err) {
+      if (err instanceof Error && err.stack) {
+        yield put(fetchError(err.stack))
+      } else {
+        yield put(fetchError('An unknown error occured.'))
       }
     }
   }
 
-  // watcher saga -- watch specific action type and run the saga 
-  function* watchCreatePost(){
-    yield takeEvery(CREATE_REQUEST, handleCreatePost);
+  function* watchUpdateById() {
+    yield takeEvery(PostsActionTypes.UPDATE_REQUEST_BY_ID, handleUpdateById)
   }
 
-  // feature saga 
-  function* postsSaga(){
+
+Step 30:
+=====
+  in the same sagas.ts file, add the following at last.. before the export 
+
+  // We can also use `fork()` here to split our saga into multiple watchers.
+  function* postsSaga() {
     yield all([
-      fork(watchFetchRequest),
-      fork(watchCreatePost), // IMPORTANT
+        fork(watchFetchRequest), 
+        fork(watchFetchById),
+        fork(watchUpdateById)
     ])
   }
 
-Step 22: 
---
-  in posts/actions.js 
+  export default postsSaga;
 
-  add the following 
 
-  export const createPostRequest = (formData) => {
-    return {
-      type: CREATE_REQUEST,
-      payload: formData
-    }
-  }
+Step 31: 
+=====
+  in store/posts/reducer.ts
 
-  export const createPostSuccess = (data) => {
-    return {
-      type: CREATE_SUCCESS,
-      payload: data
-    }
-  }
+  add the following case also..
 
-  export const createPostError = (error) => {
-    return {
-      type: CREATE_ERROR,
-      payload: error
-    }
-  }
-
-Step 23: 
----
-  In posts/reducer.js 
-
-  add the following switch case logic 
-
-   case CREATE_SUCCESS: 
-      let addedPostState = {
-        ...state,
-        isLoading: false,
-        postList: [
-          ...state.postList,
-          action.payload
-        ]
+    case PostsActionTypes.UPDATE_SUCCESS_BY_ID: 
+      // in this if/else check for status code.. json placeholder doesn't give it
+      if(action.payload){
+        return { ...state, loading: false, status: true}
+      }else{
+        return { ...state, loading: false, status: false}
       }
-      return addedPostState;
+      
 
-    case CREATE_ERROR: 
-      return {...state, isLoading: false, error: action.payload};
 
-Step 24: 
---
-  [TODO:] You can work on getting updates in PostForm comp with mapStateToProps 
+Stpe 32:
+===
+   
+   before render() in PostDetails.tsx,
 
-Step 25: 
-  Now, check the app. Create will work fine. You can handle isLoading differently as well
+   onFinish = (values: any) => {
   
-=========
+    values.id = this.props.post.id;
+    console.log('Submitting...', values);
+    this.props.putPostById(values);
+  };
+
+  onFinishFailed = (errorInfo: any) => {
+    console.log('Failed:', errorInfo);
+  };
+
+  openNotificationWithIcon = (statusType: boolean) => {
+    if(statusType){
+      notification['success']({
+        message: 'Success',
+        description:
+          'Your Post has been updated',
+      });
+    }else{
+      notification['error']({
+        message: 'Error',
+        description:
+          'Unable to Update the post. Some error occured',
+      });
+    }
+    
+  };
+
+  componentDidUpdate(){
+    if(this.props && this.props.status){
+      this.openNotificationWithIcon(this.props.status)
+    } //Todo: write else block also
+  }
+
+
+
+after the class in over, you add the following
+
+// mapDispatchToProps is especially useful for constraining our actions to the connected component.
+// You can access these via `this.props`.
+const mapDispatchToProps: PropsFromDispatch = {
+  getPostById: fetchRequestById,
+  putPostById: updateRequestById
+}
+
+
+Step 33:
+====
+  in PostDetails.tsx,
+  before the class comp, add the following
+
+  interface PropsFromDispatch {
+    getPostById: typeof fetchRequestById,
+    putPostById: typeof updateRequestById
+  }
+
+
+  Then, check you app. Update will also work if you import antd notification comp
+  ====
+
+Step 34:
+===
+Let's work on add post 
+
+in store/posts/actions.ts 
+
+  // for add post 
+  export const createRequest = (post: Post) => {
+    console.log(post);
+    return action(PostsActionTypes.CREATE_REQUEST, post)
+  }
+  export const createSuccess = (data: Post) => {
+    console.log(data);
+    return action(PostsActionTypes.CREATE_SUCCESS, data);
+  }
+
+
+Step 35:
+====
+
+  in store/posts/sagas.ts, add the handler and watcher 
+
+
+  function* handleCreate(action: ReturnType<typeof createRequest>) {
+    try {
+      // To call async functions, use redux-saga's `call()`.
+      const res = yield call(callApi, 'post', `${API_ENDPOINT}`, action.payload )
+      if (res.error) {
+        yield put(fetchError(res.error));
+      } else {
+        yield put(createSuccess(res));
+      }
+    } catch (err) {
+      if (err instanceof Error && err.stack) {
+        yield put(fetchError(err.stack))
+      } else {
+        yield put(fetchError('An unknown error occured.'))
+      }
+    }
+  }
+
+  function* watchCreate() {
+    yield takeEvery(PostsActionTypes.CREATE_REQUEST, handleCreate)
+  }
+
+
+  in the same file before export,
+   
+
+  // We can also use `fork()` here to split our saga into multiple watchers.
+  function* postsSaga() {
+    yield all([
+        fork(watchCreate),
+        fork(watchFetchRequest), 
+        fork(watchFetchById),
+        fork(watchUpdateById)
+    ])
+  }
+
+  export default postsSaga;
+
+=== 
+
+Step 36:
+--
+  in store/posts/reducer.ts 
+
+  adding one more case 
+
+    case PostsActionTypes.CREATE_SUCCESS: 
+        return { 
+              ...state, loading: false, 
+              postList: [...state.postList, action.payload ], 
+              post: action.payload 
+        }
+
+
+Step 37:
+=====
+  in PostForm.tsx,
+
+  before the comp class begins, 
+
+
+    // Separate state props + dispatch props to their own interfaces.
+    interface PropsFromState {
+      post: Post
+      errors?: string
+    }
+
+    interface PropsFromDispatch {
+      addPost: typeof createRequest
+    }
+
+    // Combine both state + dispatch props - as well as any props we want to pass - in a union type.
+    type AllProps = PropsFromState & PropsFromDispatch
+
+
+    class PostForm extends Component<AllProps> {
+      
+
+
+  and after the class comp is ended.. have the following code...
+
+
+    // It's usually good practice to only include one context at a time in a connected component.
+    // Although if necessary, you can always include multiple contexts. Just make sure to
+    // separate them from each other to prevent prop conflicts.
+    const mapStateToProps = ({ posts }: ApplicationState) => {
+      console.log(posts);
+      return{
+        post: posts.post,
+        errors: posts.errors
+      }
+    }
+
+    // mapDispatchToProps is especially useful for constraining our actions to the connected component.
+    // You can access these via `this.props`.
+    const mapDispatchToProps: PropsFromDispatch = {
+      addPost: createRequest
+    }
+
+    // Now let's connect our component!
+    // With redux v4's improved typings, we can finally omit generics here.
+    export default connect(
+      mapStateToProps,
+      mapDispatchToProps
+    )(PostForm);
+
+
+
+----
+Step 38:
+  =====
+
+  Submit the form data from PostForm.tsx 
+
+
+    onFinish = (values: any) => {
+      console.log("Success:", values);
+      // submit this data
+      this.props.addPost(values);
+    };
+
+    Then,
+    work on showing notification.
+
+
+TODO: Work on Delete Post
+
+------------
+
+
+
+MVVM 
+---
+  Model: Redux's store Data 
+ 
+  View-Model (VM):  Component-related code that manages simple state, 
+                    passes data directly onto View, potentially passes data 
+                    directly back from View
+
+  View (V): How the visuals look (JSX, CSS)
+
+  Read this: 
+  https://stackoverflow.com/questions/51506440/mvvm-architectural-pattern-for-a-reactjs-application
