@@ -1,9 +1,18 @@
 import React, { Component } from 'react'
+import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 export class PostList extends Component {
 
+  componentDidMount() {
+    console.log(this.props);
+    this.props.dispatch({
+      type: 'GET_POSTS'
+    });
+  }
+
   render() {
+
     return (
       <div>
         <h3>Post List</h3>
@@ -27,4 +36,6 @@ export class PostList extends Component {
   }
 }
 
-export default PostList;
+export default connect()(PostList);
+// store has dispatch fn and also getState fn 
+// the moment we call connect() -- dispatch fn will be available as part of props of PostList Comp 
