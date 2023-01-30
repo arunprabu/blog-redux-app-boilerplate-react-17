@@ -5,6 +5,8 @@
 */
 // feature reducer
 
+import { ADD_POST } from "../actions/types";
+
 const initialState = {
   isLoading: false,
   isError: false,
@@ -16,7 +18,18 @@ const initialState = {
 const postReducer = (state = initialState, action) => {
   console.log('Inside postReducer');
   console.log(action);
-  return state;
+  
+  switch(action.type) {
+    case ADD_POST:
+      const newState = {
+        ...state,
+        postList: [action.payload],
+      };
+      return newState;
+
+    default: 
+      return state;
+  }
 };
 
 export default postReducer;

@@ -4,14 +4,8 @@ import { Link } from 'react-router-dom';
 
 export class PostList extends Component {
 
-  componentDidMount() {
-    console.log(this.props);
-    this.props.dispatch({
-      type: 'GET_POSTS'
-    });
-  }
-
   render() {
+    console.log(this.props);
 
     return (
       <div>
@@ -36,6 +30,16 @@ export class PostList extends Component {
   }
 }
 
-export default connect()(PostList);
+// subscribing to store data
+// will convert the store data into props which will be read-only
+function mapStateToProps({posts}){ // store data
+  console.log(posts);
+  return {
+    posts
+  }
+}
+
+export default connect(mapStateToProps)(PostList);
 // store has dispatch fn and also getState fn 
 // the moment we call connect() -- dispatch fn will be available as part of props of PostList Comp 
+// to get store data you need one function 'mapStateToProps' 
