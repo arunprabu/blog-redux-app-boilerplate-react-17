@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { createStore } from "redux";
+import { createStore, applyMiddleware } from "redux";
+import thunk from "redux-thunk";
+import logger from "redux-logger";
 import { Provider } from "react-redux";
 /* Definition: The Provider Comp uses React Context which
   allows you to pass the store object to any components.
@@ -13,7 +15,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import rootReducer from './reducers';
 
-const store = createStore(rootReducer); // this needs a special param 'reducer'
+const store = createStore(rootReducer, applyMiddleware(thunk, logger)); // this needs a special param 'reducer'
 
 ReactDOM.render(
   <React.StrictMode>

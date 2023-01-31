@@ -7,24 +7,42 @@ export class PostList extends Component {
   render() {
     console.log(this.props);
 
+    if(this.props.posts.isLoading){
+      return(
+        <div className='spinner-border text-success'></div>
+      )
+    }
+
+    if (this.props.posts.isError) {
+      return (
+        <div className="alert alert-danger">
+          Some error occured try again later
+        </div>
+      );
+    }
+
     return (
       <div>
         <h3>Post List</h3>
-        <div className="list-group text-left">
-          <div className="list-group-item list-group-item-action text-start">
-            <div className="d-flex w-100 justify-content-between">
-              <h5 className="mb-1">
-                <Link to={`/posts/1`}>post 1</Link>
-              </h5>
-              <small>Post Id: 1</small>
-            </div>
-            <p className="mb-1 text-left">sample post</p>
-          </div>
+        {
+          this.props.posts.postList?.map( (post) => {
+            return (
+              <div className="list-group text-left" key={post.id}>
+                <div className="list-group-item list-group-item-action text-start">
+                  <div className="d-flex w-100 justify-content-between">
+                    <h5 className="mb-1">
+                      <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                    </h5>
+                    <small>Post Id: {post.id}</small>
+                  </div>
+                  <p className="mb-1 text-left">{post.body}</p>
+                </div>
+              </div>
+            );
+          })
 
-          <div className='alert alert-warning'>
-            No Posts Found. You can add one!
-          </div>
-        </div>
+        }
+        
       </div>
     )
   }
@@ -32,7 +50,7 @@ export class PostList extends Component {
 
 // subscribing to store data
 // will convert the store data into props which will be read-only
-function mapStateToProps({posts}){ // store data
+const mapStateToProps = ({posts}) => { // store data
   console.log(posts);
   return {
     posts

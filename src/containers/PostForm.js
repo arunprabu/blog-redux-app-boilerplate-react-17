@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux';
 import { ADD_POST } from '../actions/types';
+import { createPost } from '../services/postService';
 
 export class PostForm extends Component {
 
@@ -14,10 +15,8 @@ export class PostForm extends Component {
     };
     console.log(formData); // submittable form data
     console.log(this.props);
-    // this.props.dispatch({
-    //   type: ADD_POST,
-    //   payload: formData
-    // });
+
+    this.props.dispatch(createPost(formData));
   }
 
   render() {
