@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 
 const PostDetails = () => {
-  // what's the api url? https://jsonplaceholder.typicode.com/posts/10
   let { postId } = useParams();
   console.log(postId);
 
