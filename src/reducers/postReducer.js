@@ -5,7 +5,7 @@
 */
 // feature reducer
 
-import { ADD_POST, ADD_POST_ERROR, ADD_POST_LOADING, ADD_POST_SUCCESS } from "../actions/types";
+import { ADD_POST_ERROR, ADD_POST_LOADING, ADD_POST_SUCCESS, GET_POSTS_LOADING, GET_POSTS_SUCCESS, GET_POST_BY_ID_LOADING, GET_POST_BY_ID_SUCCESS } from "../actions/types";
 
 const initialState = {
   isLoading: false,
@@ -19,6 +19,8 @@ const postReducer = (state = initialState, action) => {
 
   switch (action.type) {
     case ADD_POST_LOADING:
+    case GET_POSTS_LOADING:
+    case GET_POST_BY_ID_LOADING:
       return {
         ...state,
         isLoading: true,
@@ -37,7 +39,23 @@ const postReducer = (state = initialState, action) => {
       return {
         ...state,
         isLoading: false,
-        isError: true
+        isError: true,
+      };
+
+    case GET_POSTS_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        isError: false,
+        postList: action.payload,
+      };
+
+    case GET_POST_BY_ID_SUCCESS:
+      return {
+        ...state,
+        isLoading: false,
+        isError: false,
+        post: action.payload
       };
 
     default:
